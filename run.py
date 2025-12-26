@@ -1,6 +1,7 @@
 import asyncio
 import random
 import inngest
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -76,7 +77,7 @@ async def main():
         is_production=False,
     )
 
-    tasks = [send_request(client, i) for i in range(1, 101)]
+    tasks = [send_request(client, i) for i in range(1, 4)] # in real code change 4 to 101
     await asyncio.gather(*tasks)
 
 

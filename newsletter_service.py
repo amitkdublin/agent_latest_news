@@ -15,6 +15,7 @@ class NewsletterService:
     @classmethod
     def _search_web_blocking(cls, topic: str, max_articles: int) -> str:
         try:
+            print('06 ****************************')
             print("Searching with BrightData SERP for:", topic)
 
             serp_tool = BrightDataSERP(
@@ -52,17 +53,18 @@ class NewsletterService:
 
     @classmethod
     async def search_web_simple(cls, topic: str, max_articles: int) -> str:
+        print('06 ****************************')
         loop = asyncio.get_event_loop()
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             result = await loop.run_in_executor(
                 executor, cls._search_web_blocking, topic, max_articles
             )
-
         return result
 
     @staticmethod
     async def generate_newsletter(ctx, topic: str, search_results: str) -> str:
+        print('07 ****************************')
         prompt = get_newsletter_prompt(topic, search_results)
 
         openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -81,5 +83,4 @@ class NewsletterService:
                 ]
             }
         )
-
         return res["choices"][0]["message"]["content"].strip()

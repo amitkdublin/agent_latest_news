@@ -12,13 +12,13 @@ from newsletter_service import NewsletterService
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 inngest_client = inngest.Inngest(
     app_id="newsletter",
     is_production=False,
-    serializer=inngest.PydanticSerializer()
+    # serializer=inngest.PydanticSerializer()
 )
 
 Path("newsletters").mkdir(exist_ok=True)
@@ -29,44 +29,52 @@ Path("newsletters").mkdir(exist_ok=True)
     trigger=inngest.TriggerEvent(event="newsletter/generate")
 )
 async def generate_newsletter(ctx: inngest.Context):
-    """generate AI newsletter from topic"""
+    try:
+        print('02 **************************** entering try block')
 
-    logger.info(f"Generating AI newsletter: {ctx.event.id}")
+        """generate AI newsletter from topic"""
 
-    async def _search_articles(request: NewsletterRequest):
-        return await NewsletterService.search_web_simple(request.topic, request.max_articles)
+        logger.info(f"Generating AI newsletter: {ctx.event.id}")
 
-    def _save_newsletter(request: NewsletterRequest, newsletter_text: str, articles_count: int):
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_topic = request.topic.replace(" ", "_").replace("/", "_")
-        filename = f"{safe_topic}_{timestamp}_{str(uuid.uuid4())[:8]}.md"
-        file_path = Path("newsletters") / filename
+        async def _search_articles(request: NewsletterRequest):
+            print('01 ****************************')
+            return await NewsletterService.search_web_simple(request.topic, request.max_articles)
 
-        with open(file_path, "w") as f:
-            f.write(f"# {request.topic} Newsletter\n\n{newsletter_text}")
+        def _save_newsletter(request: NewsletterRequest, newsletter_text: str, articles_count: int):
+            print('03 ****************************')
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            safe_topic = request.topic.replace(" ", "_").replace("/", "_")
+            filename = f"{safe_topic}_{timestamp}_{str(uuid.uuid4())[:8]}.md"
+            file_path = Path("newsletters") / filename
 
-        logger.info(f"Newsletter saved to: {file_path}")
+            with open(file_path, "w") as f:
+                f.write(f"# {request.topic} Newsletter\n\n{newsletter_text}")
 
-        return {
-            "file_path": str(file_path),
-            "topic": request.topic,
-            "articles_found": articles_count
-        }
+            logger.info(f"Newsletter saved to: {file_path}")
 
-    request = NewsletterRequest(**ctx.event.data)
+            return {
+                "file_path": str(file_path),
+                "topic": request.topic,
+                "articles_found": articles_count
+            }
 
-    search_results = await ctx.step.run(
-        "search-articles", lambda: _search_articles(request)
-    )
+        request = NewsletterRequest(**ctx.event.data)
 
-    newsletter_text = await NewsletterService.generate_newsletter(ctx, request.topic, search_results)
+        search_results = await ctx.step.run(
+            "search-articles", lambda: _search_articles(request)
+        )
 
-    result = await ctx.step.run(
-        "save-newsletter",
-        lambda: _save_newsletter(request, newsletter_text, 1),
-    )
+        newsletter_text = await NewsletterService.generate_newsletter(ctx, request.topic, search_results)
 
-    return result
+        result = await ctx.step.run(
+            "save-newsletter",
+            lambda: _save_newsletter(request, newsletter_text, 1),
+        )
+        return result
+    except Exception as e:
+        print('ERR-01 ****************************')
+        print(e)
+        return ""
 
 
 app = FastAPI(title="Newsletter API")
@@ -74,6 +82,10 @@ inngest.fast_api.serve(app, inngest_client, [generate_newsletter])
 
 
 if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    try:
+        print('05 ****************************')
+        print("staring main func in main.py")
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    except Exception as e:
+        print(e)
