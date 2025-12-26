@@ -1,0 +1,8 @@
+#it lists all the dependencies
+#then from terminal run: pip install -r requirements.txt
+
+fastapi
+inngest
+python-dotenv
+uvicorn
+langchain-brightdata 
